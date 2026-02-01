@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -9,34 +9,31 @@ import App from './App'
 import './index.css'
 import '@rainbow-me/rainbowkit/styles.css'
 
-function Main() {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnWindowFocus: false,
-      },
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
     },
-  }))
+  },
+})
 
-  const [wagmiConfig] = useState(() => ({
-    chains: [base, baseSepolia],
-    transports: {
-      [base.id]: http(),
-      [baseSepolia.id]: http(),
-    },
-  }))
+const wagmiConfig = {
+  chains: [base, baseSepolia],
+  transports: {
+    [base.id]: http('https://mainnet.base.org'),
+    [baseSepolia.id]: http('https://sepolia.base.org'),
+  },
+}
 
-  return (
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme()}>
+        <RainbowKitProvider theme={darkTheme({ accentColor: '#0052ff' })}>
           <App />
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
-  )
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <Main />
+  </React.StrictMode>
 )
