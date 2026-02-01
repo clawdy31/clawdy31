@@ -1,12 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini Base App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Base App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 400px;
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 { margin-bottom: 30px; font-size: 1.5rem; }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 30px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #0052ff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn:hover { background: #0044cc; }
+    .links { margin-top: 20px; }
+    .links a {
+      display: block;
+      padding: 10px;
+      color: #0052ff;
+      text-decoration: none;
+      border-top: 1px solid #333;
+    }
+    .links a:hover { background: #1a1a1a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Base Mini App</h1>
+    <div class="card">
+      <p style="color: #888; margin-bottom: 20px;">Connect your wallet on Base to get started</p>
+      <button class="btn" onclick="alert('Install MetaMask or Rabby wallet!')">Connect Wallet</button>
+      <div class="links">
+        <a href="https://bridge.base.org" target="_blank">Bridge to Base</a>
+        <a href="https://basescan.org" target="_blank">BaseScan</a>
+        <a href="https://app.uniswap.org" target="_blank">Uniswap on Base</a>
+      </div>
+    </div>
+  </div>
+</body>
 </html>
