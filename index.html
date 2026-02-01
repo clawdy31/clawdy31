@@ -19,16 +19,16 @@
       max-width: 400px;
       width: 100%;
       padding: 20px;
-      text-align: center;
     }
-    h1 { margin-bottom: 30px; font-size: 1.5rem; }
+    h1 { margin-bottom: 30px; font-size: 1.5rem; text-align: center; }
     .card {
       background: #1a1a1a;
       border: 1px solid #333;
       border-radius: 12px;
       padding: 30px;
+      text-align: center;
     }
-    .btn {
+    .wallet-btn {
       display: inline-block;
       padding: 12px 24px;
       background: #0052ff;
@@ -37,26 +37,66 @@
       border-radius: 8px;
       font-size: 1rem;
       cursor: pointer;
-      text-decoration: none;
+      margin-bottom: 15px;
     }
-    .btn:hover { background: #0044cc; }
+    .wallet-btn:hover { background: #0044cc; }
+    .wallet-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status {
+      padding: 10px;
+      margin: 15px 0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    .status.error { background: #331111; color: #ff6666; }
+    .status.success { background: #113311; color: #66ff66; }
+    .status.info { background: #111133; color: #6666ff; }
+    .info-box {
+      background: #0a0a0a;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+      text-align: left;
+    }
+    .info-box p { margin-bottom: 8px; font-size: 0.85rem; color: #888; }
+    .info-box strong { color: #fff; }
     .links { margin-top: 20px; }
     .links a {
       display: block;
-      padding: 10px;
+      padding: 12px;
       color: #0052ff;
       text-decoration: none;
       border-top: 1px solid #333;
+      text-align: center;
     }
-    .links a:hover { background: #1a1a1a; }
+    .links a:first-child { border-top: none; }
+    .links a:hover { background: #222; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Base Mini App</h1>
     <div class="card">
-      <p style="color: #888; margin-bottom: 20px;">Connect your wallet on Base to get started</p>
-      <button class="btn" onclick="alert('Install MetaMask or Rabby wallet!')">Connect Wallet</button>
+      <p id="walletStatus" class="status info">Checking wallet...</p>
+      
+      <button id="connectBtn" class="wallet-btn" onclick="connectWallet()">
+        Connect Wallet
+      </button>
+      
+      <div id="walletInfo" class="info-box" style="display: none;">
+        <p><strong>Address:</strong> <span id="address">-</span></p>
+        <p><strong>Network:</strong> <span id="network">-</span></p>
+        <p><strong>Balance:</strong> <span id="balance">-</span></p>
+      </div>
+      
+      <div id="sendSection" class="info-box" style="display: none;">
+        <p><strong>Send ETH</strong></p>
+        <input type="text" id="recipient" placeholder="Recipient (0x...)" 
+               style="width: 100%; padding: 10px; margin: 10px 0; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; color: #fff;">
+        <input type="number" id="amount" placeholder="Amount (ETH)" step="0.0001"
+               style="width: 100%; padding: 10px; margin: 10px 0; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; color: #fff;">
+        <button class="wallet-btn" style="width: 100%;" onclick="sendETH()">Send</button>
+      </div>
+      
       <div class="links">
         <a href="https://bridge.base.org" target="_blank">Bridge to Base</a>
         <a href="https://basescan.org" target="_blank">BaseScan</a>
@@ -64,5 +104,154 @@
       </div>
     </div>
   </div>
+
+  <script>
+    let walletAddress = null;
+    
+    async function connectWallet() {
+      const statusEl = document.getElementById('walletStatus');
+      const btn = document.getElementById('connectBtn');
+      
+      try {
+        // Check for window.ethereum (MetaMask/Rabby)
+        if (!window.ethereum) {
+          statusEl.className = 'status error';
+          statusEl.textContent = 'No wallet found! Install MetaMask or Rabby.';
+          btn.disabled = true;
+          return;
+        }
+        
+        statusEl.className = 'status info';
+        statusEl.textContent = 'Connecting...';
+        
+        // Request accounts
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        if (accounts.length === 0) {
+          throw new Error('No accounts found');
+        }
+        
+        walletAddress = accounts[0];
+        statusEl.className = 'status success';
+        statusEl.textContent = 'Wallet connected!';
+        
+        // Show wallet info
+        document.getElementById('walletInfo').style.display = 'block';
+        document.getElementById('sendSection').style.display = 'block';
+        document.getElementById('address').textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+        document.getElementById('network').textContent = 'Checking...';
+        document.getElementById('balance').textContent = 'Checking...';
+        
+        // Get network and balance
+        await getWalletInfo();
+        
+        btn.textContent = 'Connected';
+        btn.disabled = true;
+        
+      } catch (error) {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'Error: ' + error.message;
+      }
+    }
+    
+    async function getWalletInfo() {
+      if (!walletAddress) return;
+      
+      try {
+        // Get chain ID
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const networkName = getNetworkName(chainId);
+        document.getElementById('network').textContent = networkName;
+        
+        // Get balance
+        const balance = await window.ethereum.request({
+          method: 'eth_getBalance',
+          params: [walletAddress, 'latest']
+        });
+        const balanceInETH = parseInt(balance, 16) / 1e18;
+        document.getElementById('balance').textContent = balanceInETH.toFixed(4) + ' ETH';
+        
+      } catch (error) {
+        console.error('Error getting wallet info:', error);
+      }
+    }
+    
+    function getNetworkName(chainId) {
+      const networks = {
+        '0x2105': 'Base Mainnet',
+        '0x14a33': 'Base Sepolia',
+        '0x1': 'Ethereum Mainnet',
+        '0x38': 'BSC',
+        '0x89': 'Polygon',
+        '0xa86a': 'Avalanche',
+      };
+      return networks[chainId] || 'Unknown (0x' + chainId.slice(-4) + ')';
+    }
+    
+    async function sendETH() {
+      const recipient = document.getElementById('recipient').value;
+      const amount = document.getElementById('amount').value;
+      const statusEl = document.getElementById('walletStatus');
+      
+      if (!recipient || !amount) {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'Please fill in recipient and amount';
+        return;
+      }
+      
+      if (!recipient.startsWith('0x')) {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'Invalid recipient address';
+        return;
+      }
+      
+      try {
+        statusEl.className = 'status info';
+        statusEl.textContent = 'Sending...';
+        
+        const txHash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: walletAddress,
+            to: recipient,
+            value: '0x' + (parseFloat(amount) * 1e18).toString(16)
+          }]
+        });
+        
+        statusEl.className = 'status success';
+        statusEl.textContent = 'Transaction sent! Hash: ' + txHash.slice(0, 10) + '...';
+        
+      } catch (error) {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'Transaction failed: ' + error.message;
+      }
+    }
+    
+    // Listen for account changes
+    window.ethereum.on('accountsChanged', (accounts) => {
+      if (accounts.length === 0) {
+        location.reload();
+      } else {
+        walletAddress = accounts[0];
+        document.getElementById('address').textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+        getWalletInfo();
+      }
+    });
+    
+    // Listen for chain changes
+    window.ethereum.on('chainChanged', () => {
+      location.reload();
+    });
+    
+    // Check if already connected
+    window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+      if (accounts.length > 0) {
+        connectWallet();
+      } else {
+        document.getElementById('walletStatus').className = 'status info';
+        document.getElementById('walletStatus').textContent = 'Click "Connect Wallet" to start';
+      }
+    });
+  </script>
 </body>
 </html>
